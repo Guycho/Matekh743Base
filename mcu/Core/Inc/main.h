@@ -91,6 +91,10 @@ void Error_Handler(void);
 #define S3B0_GPIO_Port GPIOB
 #define S4B1_Pin GPIO_PIN_1
 #define S4B1_GPIO_Port GPIOB
+#define I2C2_SCL_Pin GPIO_PIN_10
+#define I2C2_SCL_GPIO_Port GPIOB
+#define I2C2_SDA_Pin GPIO_PIN_11
+#define I2C2_SDA_GPIO_Port GPIOB
 #define IMU3_CS_Pin GPIO_PIN_11
 #define IMU3_CS_GPIO_Port GPIOE
 #define INTERRUPT3_Pin GPIO_PIN_8

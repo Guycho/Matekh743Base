@@ -82,12 +82,19 @@ Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c
 # C++ sources
 CXX_SOURCES = \
 ../common/Src/App.cpp \
+../common/Src/BoardSensors.cpp \
 ../common/Src/led_task.cpp \
+../common/Src/sensor_task.cpp \
 ../common/hal/src/AdcDmaReader.cpp \
 ../common/hal/src/DigitalInput.cpp \
 ../common/hal/src/DigitalOutput.cpp \
+../common/hal/src/Dps310.cpp \
+../common/hal/src/Icm20602.cpp \
+../common/hal/src/Icm426xx.cpp \
 ../common/hal/src/I2cDevice.cpp \
 ../common/hal/src/Led.cpp \
+../common/hal/src/Magnetometers.cpp \
+../common/hal/src/Mpu6000.cpp \
 ../common/lib/src/Pid.cpp \
 ../common/hal/src/PwmOutput.cpp \
 ../common/hal/src/SerialPort.cpp \
@@ -123,7 +130,6 @@ MCU       = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 C_DEFS = \
 -DUSE_HAL_DRIVER \
 -DSTM32H743xx \
--DportTICK_RATE_MS=1 \
 -DUSE_PWR_LDO_SUPPLY
 
 ifeq ($(MCU_DEBUG_LOG),1)

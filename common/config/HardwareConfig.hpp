@@ -5,6 +5,26 @@
 #include <cstdint>
 #include <cstddef>
 
+enum class AdcChannel : size_t {
+    MainVoltage = 0,
+    MainCurrent = 1,
+    AuxVoltage = 2,
+    AuxCurrent = 3,
+    Airspeed = 4,
+    Rssi = 5,
+};
+
+namespace board_config {
+    constexpr size_t ADC_SCAN_LENGTH = 6;
+    constexpr float ADC_REFERENCE_VOLTS = 3.3f;
+    constexpr float MAIN_VOLTAGE_MULTIPLIER = 11.0f;
+    constexpr float AUX_VOLTAGE_MULTIPLIER = 21.0f;
+    constexpr float MAIN_CURRENT_AMPS_PER_VOLT = 40.0f;
+    constexpr float AUX_CURRENT_AMPS_PER_VOLT = 40.0f;
+    constexpr float AIRSPEED_VOLTAGE_MULTIPLIER = 2.0f;
+    constexpr float RSSI_MAX_VOLTS = 3.3f;
+}
+
 /**
  * @brief Configuration for a GPIO output pin.
  */

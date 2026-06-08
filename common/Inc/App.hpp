@@ -2,9 +2,19 @@
 #define APP_HPP
 
 #include "main.h"
+#include "BoardSensors.hpp"
+#include "Dps310.hpp"
+#include "Icm20602.hpp"
+#include "Icm426xx.hpp"
+#include "I2cDevice.hpp"
+#include "Magnetometers.hpp"
+#include "Mpu6000.hpp"
+#include "SensorTypes.hpp"
+#include "SpiDevice.hpp"
 #include "../hal/inc/AdcDmaReader.hpp"
 #include "../hal/inc/PwmOutput.hpp"
 #include "../hal/inc/DigitalOutput.hpp"
+#include "sensor_task.h"
 
 /**
  * @brief Main Application Orchestrator.
@@ -28,10 +38,23 @@ public:
     void run();
 
 private:
+    ImuDevice* detectImu(SpiDevice& spiDevice);
+    Dps310* detectBarometer();
+    MagnetometerDevice* detectMagnetometer();
+    void configureSensorContext();
+
     // Hardware Wrappers
     AdcDmaReader* adcReader_ = nullptr;
+    BoardSensors* boardSensors_ = nullptr;
     PwmOutput* pwmS3_ = nullptr;
     PwmOutput* pwmS4_ = nullptr;
+    SpiDevice* imu1Spi_ = nullptr;
+    SpiDevice* imu2Spi_ = nullptr;
+    SpiDevice* imu3Spi_ = nullptr;
+    I2cDevice* dps310I2c_ = nullptr;
+    I2cDevice* qmc5883lI2c_ = nullptr;
+    I2cDevice* hmcLis3mdlI2c_ = nullptr;
+    SensorTaskContext sensorContext_ = {};
     
     // Digital Outputs
     DigitalOutput* digS5_ = nullptr;
@@ -40,8 +63,8 @@ private:
     DigitalOutput* digS8_ = nullptr;
 
     // Configuration constants
-    static constexpr size_t kAdcScanLength = 6;
-    static constexpr float kAdcFullScaleVolts = 3.3f;
+    static constexpr size_t kAdcScanLength = board_config::ADC_SCAN_LENGTH;
+    static constexpr float kAdcFullScaleVolts = board_config::ADC_REFERENCE_VOLTS;
 };
 
 #endif /* APP_HPP */
