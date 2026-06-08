@@ -18,6 +18,14 @@ extern "C" {
 }
 
 namespace {
+    constexpr uint8_t IMU_WHO_AM_I_REG = 0x75U;
+    constexpr uint8_t QMC5883L_ADDRESS = 0x0DU;
+    constexpr uint8_t HMC5883L_LIS3MDL_ADDRESS = 0x1EU;
+    constexpr uint8_t LIS3MDL_ALT_ADDRESS = 0x1CU;
+    constexpr uint8_t QMC5883L_CHIP_ID_REG = 0x0DU;
+    constexpr uint8_t HMC5883L_ID_REG = 0x0AU;
+    constexpr uint8_t LIS3MDL_WHO_AM_I_REG = 0x0FU;
+
     // Buffer for ADC DMA - Allocated in a specific section to be compatible with D1 RAM
     // Matches the configuration in main.c
     __attribute__((section(".RAM_D1"), aligned(32)))
@@ -26,6 +34,44 @@ namespace {
     constexpr uint16_t makeI2cAddress(uint8_t address)
     {
         return static_cast<uint16_t>(address << 1U);
+    }
+
+    void logImuProbe(SpiDevice& spiDevice, const char* probeName)
+    {
+        uint8_t whoAmI = 0U;
+        const bool hasWhoAmI = spiDevice.readRegister(IMU_WHO_AM_I_REG, &whoAmI, 1);
+        std::printf("IMU probe %s whoami_ok=%d whoami=0x%02x\r\n",
+                    probeName,
+                    hasWhoAmI ? 1 : 0,
+                    static_cast<unsigned int>(whoAmI));
+    }
+
+    void logMagByteProbe(I2cDevice& i2cDevice, const char* sensorName, uint8_t address, uint8_t registerAddress)
+    {
+        uint8_t value = 0U;
+        const bool isReady = i2cDevice.isReady();
+        const bool hasValue = i2cDevice.readRegister(registerAddress, &value, 1);
+        std::printf("MAG probe %s addr=0x%02x ready=%d reg=0x%02x ok=%d value=0x%02x\r\n",
+                    sensorName,
+                    static_cast<unsigned int>(address),
+                    isReady ? 1 : 0,
+                    static_cast<unsigned int>(registerAddress),
+                    hasValue ? 1 : 0,
+                    static_cast<unsigned int>(value));
+    }
+
+    void logHmc5883lProbe(I2cDevice& i2cDevice, uint8_t address)
+    {
+        uint8_t id[3] = {};
+        const bool isReady = i2cDevice.isReady();
+        const bool hasId = i2cDevice.readRegister(HMC5883L_ID_REG, id, sizeof(id));
+        std::printf("MAG probe HMC5883L addr=0x%02x ready=%d ok=%d id=%c%c%c\r\n",
+                    static_cast<unsigned int>(address),
+                    isReady ? 1 : 0,
+                    hasId ? 1 : 0,
+                    hasId ? static_cast<char>(id[0]) : '.',
+                    hasId ? static_cast<char>(id[1]) : '.',
+                    hasId ? static_cast<char>(id[2]) : '.');
     }
 }
 
@@ -77,8 +123,9 @@ void App::run()
     osThreadTerminate(osThreadGetId());
 }
 
-void App::detectImu(SpiDevice& spiDevice)
+void App::detectImu(SpiDevice& spiDevice, const char* probeName)
 {
+    logImuProbe(spiDevice, probeName);
     Icm426xx* icm426xx = new Icm426xx(spiDevice);
     if (icm426xx->probe() && icm426xx->initialize()) {
         if (imuTaskContext_.icm426xxCount < 3U) {
@@ -133,7 +180,8 @@ Dps310* App::detectBarometer()
 
 void App::detectMagnetometer()
 {
-    qmc5883lI2c_ = new I2cDevice({&hi2c1, makeI2cAddress(0x0DU)});
+    qmc5883lI2c_ = new I2cDevice({&hi2c1, makeI2cAddress(QMC5883L_ADDRESS)});
+    logMagByteProbe(*qmc5883lI2c_, "QMC5883L", QMC5883L_ADDRESS, QMC5883L_CHIP_ID_REG);
     Qmc5883l* qmc5883l = new Qmc5883l(*qmc5883lI2c_);
     if (qmc5883l->probe() && qmc5883l->initialize()) {
         magTaskContext_.qmc5883l = qmc5883l;
@@ -143,7 +191,9 @@ void App::detectMagnetometer()
     delete qmc5883l;
     delete qmc5883lI2c_;
     qmc5883lI2c_ = nullptr;
-    hmcLis3mdlI2c_ = new I2cDevice({&hi2c1, makeI2cAddress(0x1EU)});
+    hmcLis3mdlI2c_ = new I2cDevice({&hi2c1, makeI2cAddress(HMC5883L_LIS3MDL_ADDRESS)});
+    logHmc5883lProbe(*hmcLis3mdlI2c_, HMC5883L_LIS3MDL_ADDRESS);
+    logMagByteProbe(*hmcLis3mdlI2c_, "LIS3MDL", HMC5883L_LIS3MDL_ADDRESS, LIS3MDL_WHO_AM_I_REG);
     Hmc5883l* hmc5883l = new Hmc5883l(*hmcLis3mdlI2c_);
     if (hmc5883l->probe() && hmc5883l->initialize()) {
         magTaskContext_.hmc5883l = hmc5883l;
@@ -160,6 +210,17 @@ void App::detectMagnetometer()
     delete lis3mdl;
     delete hmcLis3mdlI2c_;
     hmcLis3mdlI2c_ = nullptr;
+    lis3mdlAltI2c_ = new I2cDevice({&hi2c1, makeI2cAddress(LIS3MDL_ALT_ADDRESS)});
+    logMagByteProbe(*lis3mdlAltI2c_, "LIS3MDL", LIS3MDL_ALT_ADDRESS, LIS3MDL_WHO_AM_I_REG);
+    lis3mdl = new Lis3mdl(*lis3mdlAltI2c_);
+    if (lis3mdl->probe() && lis3mdl->initialize()) {
+        magTaskContext_.lis3mdl = lis3mdl;
+        std::printf("Detected MAG: %s\r\n", lis3mdl->getName());
+        return;
+    }
+    delete lis3mdl;
+    delete lis3mdlAltI2c_;
+    lis3mdlAltI2c_ = nullptr;
     std::printf("No external I2C magnetometer detected\r\n");
 }
 
@@ -168,9 +229,9 @@ void App::configureSensorContext()
     imuTaskContext_.icm426xxCount = 0U;
     imuTaskContext_.mpu6000Count = 0U;
     imuTaskContext_.icm20602Count = 0U;
-    detectImu(*imu1Spi_);
-    detectImu(*imu2Spi_);
-    detectImu(*imu3Spi_);
+    detectImu(*imu1Spi_, "IMU1/SPI1");
+    detectImu(*imu2Spi_, "IMU2/SPI1");
+    detectImu(*imu3Spi_, "IMU3/SPI4");
     const size_t imuCount = imuTaskContext_.icm426xxCount + imuTaskContext_.mpu6000Count + imuTaskContext_.icm20602Count;
     if (imuCount == 0U) {
         std::printf("No SPI IMU detected\r\n");

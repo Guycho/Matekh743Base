@@ -40,7 +40,7 @@ public:
     void run();
 
 private:
-    void detectImu(SpiDevice& spiDevice);
+    void detectImu(SpiDevice& spiDevice, const char* probeName);
     Dps310* detectBarometer();
     void detectMagnetometer();
     void configureSensorContext();
@@ -55,6 +55,7 @@ private:
     I2cDevice* dps310I2c_ = nullptr;
     I2cDevice* qmc5883lI2c_ = nullptr;
     I2cDevice* hmcLis3mdlI2c_ = nullptr;
+    I2cDevice* lis3mdlAltI2c_ = nullptr;
     ImuTaskContext imuTaskContext_ = {};
     BaroTaskContext baroTaskContext_ = {};
     MagTaskContext magTaskContext_ = {};
