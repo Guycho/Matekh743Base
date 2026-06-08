@@ -63,7 +63,14 @@ DMA_HandleTypeDef hdma_usart1_rx;
 osThreadId_t MainTaskHandle;
 const osThreadAttr_t MainTask_attributes = {
   .name = "MainTask",
-  .stack_size = 128 * 4,
+  .stack_size = 1024 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for AppTask */
+osThreadId_t AppTaskHandle;
+const osThreadAttr_t AppTask_attributes = {
+  .name = "AppTask",
+  .stack_size = 4096 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
@@ -84,6 +91,7 @@ static void MX_SPI4_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 void StartDefaultTask(void *argument);
+void StartAppTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 extern void app_main_task(void *argument);
@@ -127,6 +135,8 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
   MX_DMA_Init();
   MX_ADC1_Init();
   MX_USART1_UART_Init();
@@ -819,12 +829,28 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
+  (void)argument;
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
-  app_main_task(argument);
+  HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
+  osDelay(500);
+  AppTaskHandle = osThreadNew(StartAppTask, NULL, &AppTask_attributes);
   osThreadTerminate(osThreadGetId());
   /* USER CODE END 5 */
+}
+
+/**
+  * @brief  Function implementing the AppTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+void StartAppTask(void *argument)
+{
+  (void)argument;
+  HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_SET);
+  app_main_task(argument);
+  osThreadTerminate(osThreadGetId());
 }
 
  /* MPU Configuration */

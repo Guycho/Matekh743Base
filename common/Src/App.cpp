@@ -176,6 +176,8 @@ extern "C" void app_main_task(void *argument) {
     static App app;
     if (!app.initialize()) {
         // Error handling
+        HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
         while(1);
     }
     app.run();
