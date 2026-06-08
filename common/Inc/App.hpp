@@ -40,9 +40,10 @@ public:
     void run();
 
 private:
-    void detectImu(SpiDevice& spiDevice, const char* probeName);
+    void initializeDiscoveredImu(SpiDevice& spiDevice, const char* probeName, uint8_t whoAmI);
     Dps310* detectBarometer();
-    void detectMagnetometer();
+    void probeMagnetometers();
+    void initializeDiscoveredMagnetometer();
     void configureSensorContext();
 
     // Hardware Wrappers
@@ -56,6 +57,14 @@ private:
     I2cDevice* qmc5883lI2c_ = nullptr;
     I2cDevice* hmcLis3mdlI2c_ = nullptr;
     I2cDevice* lis3mdlAltI2c_ = nullptr;
+    bool hasQmc5883lProbe_ = false;
+    uint8_t qmc5883lChipId_ = 0U;
+    bool hasHmc5883lProbe_ = false;
+    uint8_t hmc5883lId_[3] = {};
+    bool hasLis3mdlProbe_ = false;
+    uint8_t lis3mdlChipId_ = 0U;
+    bool hasLis3mdlAltProbe_ = false;
+    uint8_t lis3mdlAltChipId_ = 0U;
     ImuTaskContext imuTaskContext_ = {};
     BaroTaskContext baroTaskContext_ = {};
     MagTaskContext magTaskContext_ = {};
