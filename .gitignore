@@ -1,0 +1,18 @@
+# Build artifacts
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+
+# Build directories
+build/
+mcu/build/
+
+# STM32CubeMX
+.mxproject
+
+# OS generated files
+.DS_Store
+Thumbs.db
