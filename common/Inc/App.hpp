@@ -14,7 +14,9 @@
 #include "../hal/inc/AdcDmaReader.hpp"
 #include "../hal/inc/PwmOutput.hpp"
 #include "../hal/inc/DigitalOutput.hpp"
-#include "sensor_task.h"
+#include "baro_task.h"
+#include "imu_task.h"
+#include "mag_task.h"
 
 /**
  * @brief Main Application Orchestrator.
@@ -53,7 +55,9 @@ private:
     I2cDevice* dps310I2c_ = nullptr;
     I2cDevice* qmc5883lI2c_ = nullptr;
     I2cDevice* hmcLis3mdlI2c_ = nullptr;
-    SensorTaskContext sensorContext_ = {};
+    ImuTaskContext imuTaskContext_ = {};
+    BaroTaskContext baroTaskContext_ = {};
+    MagTaskContext magTaskContext_ = {};
     
     // Digital Outputs
     DigitalOutput* digS5_ = nullptr;

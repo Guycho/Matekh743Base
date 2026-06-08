@@ -82,8 +82,10 @@ Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c
 # C++ sources
 CXX_SOURCES = \
 ../common/Src/App.cpp \
+../common/Src/baro_task.cpp \
+../common/Src/imu_task.cpp \
 ../common/Src/led_task.cpp \
-../common/Src/sensor_task.cpp \
+../common/Src/mag_task.cpp \
 ../common/hal/src/AdcDmaReader.cpp \
 ../common/hal/src/DigitalInput.cpp \
 ../common/hal/src/DigitalOutput.cpp \
