@@ -2,14 +2,14 @@
 #define APP_HPP
 
 #include "main.h"
-#include "BoardSensors.hpp"
 #include "Dps310.hpp"
+#include "Hmc5883l.hpp"
 #include "Icm20602.hpp"
 #include "Icm426xx.hpp"
 #include "I2cDevice.hpp"
-#include "Magnetometers.hpp"
+#include "Lis3mdl.hpp"
 #include "Mpu6000.hpp"
-#include "SensorTypes.hpp"
+#include "Qmc5883l.hpp"
 #include "SpiDevice.hpp"
 #include "../hal/inc/AdcDmaReader.hpp"
 #include "../hal/inc/PwmOutput.hpp"
@@ -38,14 +38,13 @@ public:
     void run();
 
 private:
-    ImuDevice* detectImu(SpiDevice& spiDevice);
+    void detectImu(SpiDevice& spiDevice);
     Dps310* detectBarometer();
-    MagnetometerDevice* detectMagnetometer();
+    void detectMagnetometer();
     void configureSensorContext();
 
     // Hardware Wrappers
     AdcDmaReader* adcReader_ = nullptr;
-    BoardSensors* boardSensors_ = nullptr;
     PwmOutput* pwmS3_ = nullptr;
     PwmOutput* pwmS4_ = nullptr;
     SpiDevice* imu1Spi_ = nullptr;

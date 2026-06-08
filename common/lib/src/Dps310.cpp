@@ -46,7 +46,7 @@ bool Dps310::initialize()
     return device_.writeByte(MEAS_CFG_REG, 0x07U);
 }
 
-bool Dps310::readPressureTemperature(BarometerSample& sample)
+bool Dps310::readPressureTemperature(Dps310Sample& sample)
 {
     uint8_t data[6] = {};
     if (!device_.readRegister(PRS_B2_REG, data, sizeof(data))) {

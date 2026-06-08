@@ -27,7 +27,7 @@ namespace {
     }
 }
 
-App::App() : adcReader_(nullptr), boardSensors_(nullptr), pwmS3_(nullptr), pwmS4_(nullptr)
+App::App() : adcReader_(nullptr), pwmS3_(nullptr), pwmS4_(nullptr)
 {
 }
 
@@ -35,7 +35,6 @@ bool App::initialize()
 {
     // Initialize ADC Wrapper
     adcReader_ = new AdcDmaReader({&hadc1, kAdcScanLength, gAdcBuffer, kAdcFullScaleVolts});
-    boardSensors_ = new BoardSensors(*adcReader_);
     
     // Initialize PWM Wrappers
     // S3 is TIM2 CH1, S4 is TIM2 CH2
@@ -67,24 +66,38 @@ void App::run()
     osThreadTerminate(osThreadGetId());
 }
 
-ImuDevice* App::detectImu(SpiDevice& spiDevice)
+void App::detectImu(SpiDevice& spiDevice)
 {
     Icm426xx* icm426xx = new Icm426xx(spiDevice);
     if (icm426xx->probe() && icm426xx->initialize()) {
-        return icm426xx;
+        if (sensorContext_.icm426xxCount < 3U) {
+            sensorContext_.icm426xxImus[sensorContext_.icm426xxCount] = icm426xx;
+            ++sensorContext_.icm426xxCount;
+            std::printf("Detected IMU: %s\r\n", icm426xx->getName());
+            return;
+        }
     }
     delete icm426xx;
     Mpu6000* mpu6000 = new Mpu6000(spiDevice);
     if (mpu6000->probe() && mpu6000->initialize()) {
-        return mpu6000;
+        if (sensorContext_.mpu6000Count < 3U) {
+            sensorContext_.mpu6000Imus[sensorContext_.mpu6000Count] = mpu6000;
+            ++sensorContext_.mpu6000Count;
+            std::printf("Detected IMU: %s\r\n", mpu6000->getName());
+            return;
+        }
     }
     delete mpu6000;
     Icm20602* icm20602 = new Icm20602(spiDevice);
     if (icm20602->probe() && icm20602->initialize()) {
-        return icm20602;
+        if (sensorContext_.icm20602Count < 3U) {
+            sensorContext_.icm20602Imus[sensorContext_.icm20602Count] = icm20602;
+            ++sensorContext_.icm20602Count;
+            std::printf("Detected IMU: %s\r\n", icm20602->getName());
+            return;
+        }
     }
     delete icm20602;
-    return nullptr;
 }
 
 Dps310* App::detectBarometer()
@@ -107,12 +120,14 @@ Dps310* App::detectBarometer()
     return nullptr;
 }
 
-MagnetometerDevice* App::detectMagnetometer()
+void App::detectMagnetometer()
 {
     qmc5883lI2c_ = new I2cDevice({&hi2c1, makeI2cAddress(0x0DU)});
     Qmc5883l* qmc5883l = new Qmc5883l(*qmc5883lI2c_);
     if (qmc5883l->probe() && qmc5883l->initialize()) {
-        return qmc5883l;
+        sensorContext_.qmc5883l = qmc5883l;
+        std::printf("Detected MAG: %s\r\n", qmc5883l->getName());
+        return;
     }
     delete qmc5883l;
     delete qmc5883lI2c_;
@@ -120,45 +135,39 @@ MagnetometerDevice* App::detectMagnetometer()
     hmcLis3mdlI2c_ = new I2cDevice({&hi2c1, makeI2cAddress(0x1EU)});
     Hmc5883l* hmc5883l = new Hmc5883l(*hmcLis3mdlI2c_);
     if (hmc5883l->probe() && hmc5883l->initialize()) {
-        return hmc5883l;
+        sensorContext_.hmc5883l = hmc5883l;
+        std::printf("Detected MAG: %s\r\n", hmc5883l->getName());
+        return;
     }
     delete hmc5883l;
     Lis3mdl* lis3mdl = new Lis3mdl(*hmcLis3mdlI2c_);
     if (lis3mdl->probe() && lis3mdl->initialize()) {
-        return lis3mdl;
+        sensorContext_.lis3mdl = lis3mdl;
+        std::printf("Detected MAG: %s\r\n", lis3mdl->getName());
+        return;
     }
     delete lis3mdl;
     delete hmcLis3mdlI2c_;
     hmcLis3mdlI2c_ = nullptr;
-    return nullptr;
+    std::printf("No external I2C magnetometer detected\r\n");
 }
 
 void App::configureSensorContext()
 {
-    sensorContext_.boardSensors = boardSensors_;
-    sensorContext_.imuCount = 0U;
-    ImuDevice* imu1 = detectImu(*imu1Spi_);
-    ImuDevice* imu2 = detectImu(*imu2Spi_);
-    ImuDevice* imu3 = detectImu(*imu3Spi_);
-    ImuDevice* detectedImus[] = {imu1, imu2, imu3};
-    for (ImuDevice* imu : detectedImus) {
-        if (imu != nullptr && sensorContext_.imuCount < 3U) {
-            sensorContext_.imus[sensorContext_.imuCount] = imu;
-            ++sensorContext_.imuCount;
-            std::printf("Detected IMU: %s\r\n", imu->getName());
-        }
-    }
-    if (sensorContext_.imuCount == 0U) {
+    sensorContext_.adcReader = adcReader_;
+    sensorContext_.icm426xxCount = 0U;
+    sensorContext_.mpu6000Count = 0U;
+    sensorContext_.icm20602Count = 0U;
+    detectImu(*imu1Spi_);
+    detectImu(*imu2Spi_);
+    detectImu(*imu3Spi_);
+    const size_t imuCount = sensorContext_.icm426xxCount + sensorContext_.mpu6000Count + sensorContext_.icm20602Count;
+    if (imuCount == 0U) {
         std::printf("No SPI IMU detected\r\n");
     }
     sensorContext_.barometer = detectBarometer();
     std::printf("%s\r\n", sensorContext_.barometer != nullptr ? "Detected BARO: DPS310" : "No DPS310 detected");
-    sensorContext_.magnetometer = detectMagnetometer();
-    if (sensorContext_.magnetometer != nullptr) {
-        std::printf("Detected MAG: %s\r\n", sensorContext_.magnetometer->getName());
-    } else {
-        std::printf("No external I2C magnetometer detected\r\n");
-    }
+    detectMagnetometer();
 }
 
 // Helper functions to bridge C and C++

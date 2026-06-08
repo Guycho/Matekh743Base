@@ -19,22 +19,22 @@ int16_t makeInt16(uint8_t high, uint8_t low)
 }
 
 Icm426xx::Icm426xx(SpiDevice& device)
-    : device_(device), kind_(ImuKind::Unknown), whoAmI_(0U)
+    : device_(device), kind_(Icm426xxKind::Unknown), whoAmI_(0U)
 {
 }
 
 const char* Icm426xx::getName() const
 {
-    if (kind_ == ImuKind::Icm42688p) {
+    if (kind_ == Icm426xxKind::Icm42688p) {
         return "ICM42688-P";
     }
-    if (kind_ == ImuKind::Icm42605) {
+    if (kind_ == Icm426xxKind::Icm42605) {
         return "ICM42605";
     }
     return "ICM426xx";
 }
 
-ImuKind Icm426xx::getKind() const
+Icm426xxKind Icm426xx::getKind() const
 {
     return kind_;
 }
@@ -45,20 +45,20 @@ bool Icm426xx::probe()
         return false;
     }
     if (whoAmI_ == ICM42688P_WHO_AM_I) {
-        kind_ = ImuKind::Icm42688p;
+        kind_ = Icm426xxKind::Icm42688p;
         return true;
     }
     if (whoAmI_ == ICM42605_WHO_AM_I) {
-        kind_ = ImuKind::Icm42605;
+        kind_ = Icm426xxKind::Icm42605;
         return true;
     }
-    kind_ = ImuKind::Unknown;
+    kind_ = Icm426xxKind::Unknown;
     return false;
 }
 
 bool Icm426xx::initialize()
 {
-    if (kind_ == ImuKind::Unknown && !probe()) {
+    if (kind_ == Icm426xxKind::Unknown && !probe()) {
         return false;
     }
     if (!device_.writeRegister(PWR_MGMT0_REG, ENABLE_ACCEL_GYRO_LOW_NOISE)) {
@@ -71,18 +71,18 @@ bool Icm426xx::initialize()
     return device_.writeRegister(ACCEL_CONFIG0_REG, TWO_KHZ_ODR_16G);
 }
 
-bool Icm426xx::readSample(ImuSample& sample)
+bool Icm426xx::readSample(Icm426xxSample& sample)
 {
     uint8_t data[12] = {};
     if (!device_.readRegister(ACCEL_DATA_X1_REG, data, sizeof(data))) {
         return false;
     }
-    sample.accel.x = makeInt16(data[0], data[1]);
-    sample.accel.y = makeInt16(data[2], data[3]);
-    sample.accel.z = makeInt16(data[4], data[5]);
-    sample.gyro.x = makeInt16(data[6], data[7]);
-    sample.gyro.y = makeInt16(data[8], data[9]);
-    sample.gyro.z = makeInt16(data[10], data[11]);
+    sample.accelX = makeInt16(data[0], data[1]);
+    sample.accelY = makeInt16(data[2], data[3]);
+    sample.accelZ = makeInt16(data[4], data[5]);
+    sample.gyroX = makeInt16(data[6], data[7]);
+    sample.gyroY = makeInt16(data[8], data[9]);
+    sample.gyroZ = makeInt16(data[10], data[11]);
     sample.temperature = 0;
     return true;
 }

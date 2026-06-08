@@ -25,11 +25,6 @@ const char* Icm20602::getName() const
     return "ICM20602";
 }
 
-ImuKind Icm20602::getKind() const
-{
-    return ImuKind::Icm20602;
-}
-
 bool Icm20602::probe()
 {
     uint8_t whoAmI = 0U;
@@ -60,18 +55,18 @@ bool Icm20602::initialize()
     return device_.writeRegister(ACCEL_CONFIG_REG, 0x10U);
 }
 
-bool Icm20602::readSample(ImuSample& sample)
+bool Icm20602::readSample(Icm20602Sample& sample)
 {
     uint8_t data[14] = {};
     if (!device_.readRegister(ACCEL_XOUT_H_REG, data, sizeof(data))) {
         return false;
     }
-    sample.accel.x = makeInt16(data[0], data[1]);
-    sample.accel.y = makeInt16(data[2], data[3]);
-    sample.accel.z = makeInt16(data[4], data[5]);
+    sample.accelX = makeInt16(data[0], data[1]);
+    sample.accelY = makeInt16(data[2], data[3]);
+    sample.accelZ = makeInt16(data[4], data[5]);
     sample.temperature = makeInt16(data[6], data[7]);
-    sample.gyro.x = makeInt16(data[8], data[9]);
-    sample.gyro.y = makeInt16(data[10], data[11]);
-    sample.gyro.z = makeInt16(data[12], data[13]);
+    sample.gyroX = makeInt16(data[8], data[9]);
+    sample.gyroY = makeInt16(data[10], data[11]);
+    sample.gyroZ = makeInt16(data[12], data[13]);
     return true;
 }
